@@ -1,0 +1,147 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!--
+    Adapted from:
+    https://gist.github.com/phillipgreenii/7c954e3c3911e5c32bd0
+    -->
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>it.megadix</groupId>
+    <artifactId>create-react-app-servlet</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <npm.output.directory>build</npm.output.directory>
+    </properties>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <!-- Standard plugin to generate WAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.1.1</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>${npm.output.directory}</directory>
+                        </resource>
+                    </webResources>
+                    <webXml>${basedir}/web.xml</webXml>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.3.2</version>
+                <executions>
+                    <!-- Required: The following will ensure `npm install` is called
+                         before anything else during the 'Default Lifecycle' -->
+                    <execution>
+                        <id>npm install (initialize)</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <!-- Required: The following will ensure `npm install` is called
+                         before anything else during the 'Clean Lifecycle' -->
+                    <execution>
+                        <id>npm install (clean)</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>pre-clean</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Required: This following calls `npm run build` where 'build' is
+                         the script name I used in my project, change this if yours is
+                             different -->
+                    <execution>
+                        <id>npm run build (compile)</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>build</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                </executions>
+
+                <configuration>
+                    <environmentVariables>
+                        <CI>true</CI>
+                        <!-- The following parameters create an NPM sandbox for CI -->
+                        <NPM_CONFIG_PREFIX>${basedir}/npm</NPM_CONFIG_PREFIX>
+                        <NPM_CONFIG_CACHE>${NPM_CONFIG_PREFIX}/cache</NPM_CONFIG_CACHE>
+                        <NPM_CONFIG_TMP>${project.build.directory}/npmtmp</NPM_CONFIG_TMP>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+
+                        <configuration>
+                            <environmentVariables>
+                                <PUBLIC_URL>http://localhost:8080/${project.artifactId}</PUBLIC_URL>
+                                <REACT_APP_ROUTER_BASE>/${project.artifactId}</REACT_APP_ROUTER_BASE>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>prod</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+
+                        <configuration>
+                            <environmentVariables>
+                                <PUBLIC_URL>http://my-awesome-production-host/${project.artifactId}</PUBLIC_URL>
+                                <REACT_APP_ROUTER_BASE>/${project.artifactId}</REACT_APP_ROUTER_BASE>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
